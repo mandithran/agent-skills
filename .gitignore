@@ -4,3 +4,8 @@ node_modules/
 .env.*
 *.log
 .claude/.simplify-ignore-cache/
+
+# When this repo is symlinked into ~/.claude/plugins/cache/.../1.0.0/, Claude
+# Code writes PID-named lock files into a `.in_use/` subdir. Ignore them so
+# they don't pollute git status in this source-of-truth repo.
+.in_use/
