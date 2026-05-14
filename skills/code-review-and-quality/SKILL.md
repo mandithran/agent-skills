@@ -11,6 +11,42 @@ Multi-dimensional code review with quality gates. Every change gets reviewed bef
 
 **The approval standard:** Approve a change when it definitely improves overall code health, even if it isn't perfect. Perfect code doesn't exist — the goal is continuous improvement. Don't block a change because it isn't exactly how you would have written it. If it improves the codebase and follows the project's conventions, approve it.
 
+**Mandi's simplicity bias:** Many of these repositories are solo learning
+projects, so review should protect Mandi's time and mental energy as well as the
+code. Defend against spaghetti code: look for unnecessary complexity,
+over-generalised abstractions, broad helpers, and defensive branches that make
+the code harder to read than the real problem requires. When complexity is not
+earning its keep, recommend cutting it.
+
+**Edge-case discipline:** Do not require speculative error handling for every
+possible edge case. Ask for extra guards only when the failure is observed,
+reasonably likely in normal use, high-impact if missed, or at a real system
+boundary such as external APIs, files, user input, secrets, auth, or
+persistence. In a solo repo, low-probability failures can often be discovered
+more cheaply by running and using the code; mark those as Suggestions or FYIs
+rather than required changes.
+
+**Suggestion discipline:** Do not propose improvements for the sake of proposing
+improvements. Every suggestion should solve a concrete readability, correctness,
+learning, maintenance, or debugging problem. If the code works, is
+understandable, and the improvement does not clearly reduce future cost, omit
+it. A concise review with no Suggestions is better than a noisy review that
+creates extra decision work.
+
+For each optional suggestion, include this scorecard so Mandi can decide whether
+to do it now, park it, or disregard it:
+
+```markdown
+Suggestion scorecard:
+- Readability gain: Low | Medium | High
+- Works without this: Yes | Mostly | No
+- Solves existing problem: Yes | Partial | No, future-only
+- Likelihood of problem: Low | Medium | High
+- Cost to implement: Low | Medium | High
+- Review/mental load: Low | Medium | High
+- Recommendation: Do now | Park for later | Disregard
+```
+
 ## When to Use
 
 - Before merging any PR or change
@@ -28,8 +64,9 @@ Every review evaluates code across these dimensions:
 Does the code do what it claims to do?
 
 - Does it match the spec or task requirements?
-- Are edge cases handled (null, empty, boundary values)?
-- Are error paths handled (not just the happy path)?
+- Are realistic edge cases handled (null, empty, boundary values) when they are
+  likely, observed, high-impact, or at a system boundary?
+- Are realistic error paths handled without adding speculative defensive code?
 - Does it pass all tests? Are the tests actually testing the right things?
 - Are there off-by-one errors, race conditions, or state inconsistencies?
 
@@ -43,6 +80,9 @@ Can another engineer (or agent) understand this code without the author explaini
 - Are there any "clever" tricks that should be simplified?
 - **Could this be done in fewer lines?** (1000 lines where 100 suffice is a failure)
 - **Are abstractions earning their complexity?** (Don't generalize until the third use case)
+- **Can any defensive handling or helper layer be cut because it solves a
+  failure mode that has not appeared and is unlikely in normal use?**
+- **Is every suggested improvement solving a real problem, or is it review noise?**
 - Would comments help clarify non-obvious intent? (But don't comment obvious code.)
 - Are there dead code artifacts: no-op variables (`_unused`), backwards-compat shims, or `// removed` comments?
 
@@ -134,7 +174,7 @@ Tests reveal intent and coverage:
 ```
 - Do tests exist for the change?
 - Do they test behavior (not implementation details)?
-- Are edge cases covered?
+- Are likely or high-impact edge cases covered?
 - Do tests have descriptive names?
 - Would the tests catch a regression if the code changed?
 ```
@@ -165,6 +205,9 @@ Label every comment with its severity so the author knows what's required vs opt
 | **FYI** | Informational only | No action needed — context for future reference |
 
 This prevents authors from treating all feedback as mandatory and wasting time on optional suggestions.
+Optional suggestions must include the scorecard from the "Suggestion
+discipline" section. If you cannot justify the suggestion with that scorecard,
+leave it out.
 
 ### Step 5: Verify the Verification
 
@@ -275,14 +318,15 @@ Part of code review is dependency review:
 
 ### Correctness
 - [ ] Change matches spec/task requirements
-- [ ] Edge cases handled
-- [ ] Error paths handled
+- [ ] Likely/high-impact edge cases handled
+- [ ] Realistic error paths handled without speculative defensive code
 - [ ] Tests cover the change adequately
 
 ### Readability
 - [ ] Names are clear and consistent
 - [ ] Logic is straightforward
 - [ ] No unnecessary complexity
+- [ ] Unused abstractions and low-value defensive branches are proposed for removal
 
 ### Architecture
 - [ ] Follows existing patterns

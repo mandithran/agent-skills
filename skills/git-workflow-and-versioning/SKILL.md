@@ -31,19 +31,19 @@ This is the recommended default. Teams using gitflow or long-lived branches can 
 - **Release branches are acceptable.** When you need to stabilize a release while main moves forward.
 - **Feature flags > long branches.** Prefer deploying incomplete work behind flags rather than keeping it on a branch for weeks.
 
-### 1. Commit Early, Commit Often
+### 1. Prepare Reviewable Save Points
 
-Each successful increment gets its own commit. Don't accumulate large uncommitted changes.
+Each successful increment should be small enough to commit cleanly, but Codex should leave the final commit to the user unless the user explicitly asks Codex to commit. This keeps Mandi accountable for reviewing and understanding the diff before it becomes history.
 
 ```
 Work pattern:
-  Implement slice → Test → Verify → Commit → Next slice
+  Implement slice → Test → Verify → Summarize diff → Suggest commit message
 
 Not this:
   Implement everything → Hope it works → Giant commit
 ```
 
-Commits are save points. If the next change breaks something, you can revert to the last known-good state instantly.
+Commits are still save points, but the default handoff is an uncommitted, reviewed working tree plus a clear suggested commit message. If Mandi asks Codex to commit, then make one atomic commit after validation.
 
 ### 2. Atomic Commits
 
@@ -176,17 +176,17 @@ Benefits:
 Agent starts work
     │
     ├── Makes a change
-    │   ├── Test passes? → Commit → Continue
+    │   ├── Test passes? → Summarize diff + suggest commit message → Continue or hand back
     │   └── Test fails? → Revert to last commit → Investigate
     │
     ├── Makes another change
-    │   ├── Test passes? → Commit → Continue
+    │   ├── Test passes? → Summarize diff + suggest commit message → Continue or hand back
     │   └── Test fails? → Revert to last commit → Investigate
     │
-    └── Feature complete → All commits form a clean history
+    └── Feature complete → User reviews and creates the final commit unless they asked Codex to do it
 ```
 
-This pattern means you never lose more than one increment of work. If an agent goes off the rails, `git reset --hard HEAD` takes you back to the last successful state.
+This pattern still keeps increments small, while making the review step explicit. It is especially useful while Mandi is learning project structure because the commit becomes a deliberate act of understanding, not an automatic agent cleanup step.
 
 ## Change Summaries
 
@@ -207,6 +207,10 @@ POTENTIAL CONCERNS:
 ```
 
 This pattern catches wrong assumptions early and gives reviewers a clear map of the change. The "DIDN'T TOUCH" section is especially important — it shows you exercised scope discipline and didn't go on an unsolicited renovation.
+
+## Suggested Commit Messages
+
+When handing work back uncommitted, suggest a commit message for the current full uncommitted diff. Check `git status` and `git diff` before writing it, and make the subject/body account for every dirty file in the working tree. If the user asks for a message for only one subset of changes, clearly label it as a partial-scope message.
 
 ## Pre-Commit Hygiene
 
@@ -271,7 +275,7 @@ git log --grep="validation" --oneline
 
 | Rationalization | Reality |
 |---|---|
-| "I'll commit when the feature is done" | One giant commit is impossible to review, debug, or revert. Commit each slice. |
+| "I'll commit when the feature is done" | One giant commit is impossible to review, debug, or revert. Keep each slice small enough to review and commit separately. |
 | "The message doesn't matter" | Messages are documentation. Future you (and future agents) will need to understand what changed and why. |
 | "I'll squash it all later" | Squashing destroys the development narrative. Prefer clean incremental commits from the start. |
 | "Branches add overhead" | Short-lived branches are free and prevent conflicting work from colliding. Long-lived branches are the problem — merge within 1-3 days. |
